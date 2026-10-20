@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>秋招投递记录 · 录入台</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <span class="logo">🎯</span>
+      <div>
+        <h1>秋招投递记录</h1>
+        <p class="sub">填完点「提交写入 Excel」即可 —— 数据实时写进 <code>投递记录.xlsx</code></p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span id="saveTip" class="savetip"></span>
+      <button id="btnRefresh" class="btn ghost" type="button">↻ 刷新</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============ 统计 ============ -->
+  <section class="cards" id="cards"></section>
+
+  <!-- ============ 表单 ============ -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2 id="formTitle">➕ 新增投递记录</h2>
+      <button id="btnCancelEdit" class="btn mini ghost hidden" type="button">取消编辑</button>
+    </div>
+
+    <form id="form" autocomplete="off">
+      <input type="hidden" id="f__row">
+      <input type="hidden" id="f__expect">
+
+      <div class="fieldset">
+        <div class="fs-title">基础信息</div>
+        <div class="grid">
+          <label class="fld req"><span>公司</span>
+            <input id="f_公司" list="dl_公司" placeholder="如：腾讯 / 字节跳动" required>
+          </label>
+          <label class="fld req"><span>岗位</span>
+            <input id="f_岗位" list="dl_岗位" placeholder="如：后端开发工程师" required>
+          </label>
+          <label class="fld"><span>投递日期</span>
+            <input id="f_投递日期" type="date">
+          </label>
+          <label class="fld"><span>渠道</span>
+            <select id="f_渠道"></select>
+          </label>
+          <label class="fld"><span>状态</span>
+            <select id="f_状态"></select>
+          </label>
+          <label class="fld"><span>薪资</span>
+            <input id="f_薪资" placeholder="如：25k×16 / 面议">
+          </label>
+          <label class="fld"><span>工作地点</span>
+            <input id="f_工作地点" placeholder="如：深圳 / 上海">
+          </label>
+          <label class="fld"><span>下一步动作</span>
+            <input id="f_下一步动作" placeholder="如：等笔试通知 / 准备二面">
+          </label>
+          <label class="fld"><span>截止 / 跟进时间</span>
+            <input id="f_截止/跟进时间" type="date">
+          </label>
+        </div>
+        <label class="fld full"><span>备注</span>
+          <textarea id="f_备注" rows="2" placeholder="JD 要点、内推人、投递入口…"></textarea>
+        </label>
+      </div>
+
+      <details class="fieldset interview" open>
+        <summary class="fs-title">面试跟踪 <em>（还没到面试阶段可以先不填）</em></summary>
+        <div class="grid">
+          <label class="fld"><span>笔试时间</span>
+            <input id="f_笔试时间" type="date"></label>
+          <label class="fld"><span>一面时间</span>
+            <input id="f_一面时间" type="date"></label>
+          <label class="fld"><span>二面时间</span>
+            <input id="f_二面时间" type="date"></label>
+          <label class="fld"><span>HR 面时间</span>
+            <input id="f_HR面时间" type="date"></label>
+          <label class="fld"><span>面试形式</span>
+            <select id="f_面试形式"></select></label>
+          <label class="fld"><span>结果</span>
+            <select id="f_结果"></select></label>
+        </div>
+      </details>
+
+      <div class="form-foot">
+        <button class="btn primary" type="submit" id="btnSubmit">提交写入 Excel</button>
+        <button class="btn ghost" type="reset">重置</button>
+        <span class="hint">快捷键 <kbd>Ctrl</kbd>+<kbd>Enter</kbd> 提交 · <kbd>Alt</kbd>+<kbd>1~9</kbd> 聚焦字段</span>
+      </div>
+    </form>
+
+    <details class="fieldset bulk">
+      <summary class="fs-title">📥 批量导入 <em>（粘贴一列「公司 + 岗位」，一次全部入库）</em></summary>
+      <p class="bulk-tip">
+        每行一条，公司在前、岗位在后，用空格 / 逗号 / Tab 分隔都行，行尾可带日期。<br>
+        例：<code>腾讯 后端开发工程师</code>　<code>字节跳动,数据开发</code>　<code>美团 产品经理 2025-09-01</code>
+      </p>
+      <textarea id="bulkText" rows="6" placeholder="腾讯 后端开发工程师&#10;字节跳动 数据开发&#10;华为 算法工程师&#10;美团 产品经理 2025-09-01"></textarea>
+      <div class="form-foot">
+        <button class="btn primary" type="button" id="btnBulk">导入到 Excel</button>
+        <span class="hint">默认渠道和状态取上方表单里的选择；已存在的「公司+岗位」会自动跳过</span>
+      </div>
+      <div id="bulkResult" class="bulk-result hidden"></div>
+    </details>
+  </section>
+
+  <!-- ============ 列表 ============ -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>📋 已投递记录 <span id="count" class="pill">0</span></h2>
+      <input id="search" class="search" placeholder="搜索公司 / 岗位 / 备注…">
+    </div>
+    <div class="tablewrap">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th style="width:44px">#</th>
+            <th>公司</th>
+            <th>岗位</th>
+            <th style="width:104px">投递日期</th>
+            <th style="width:92px">渠道</th>
+            <th style="width:120px">状态</th>
+            <th>下一步 / 跟进</th>
+            <th style="width:82px">天数</th>
+            <th style="width:110px">操作</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="empty hidden" id="empty">还没有记录，在上面填一条吧 👆</p>
+  </section>
+
+  <!-- ============ 回收站 / 历史版本 ============ -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>🛟 回收站与历史版本
+        <span id="trashCount" class="pill gray">0</span>
+        <span id="backupCount" class="pill gray">0</span>
+      </h2>
+      <div class="top-actions">
+        <button id="btnBackup" class="btn mini ghost" type="button">💾 立即备份</button>
+        <button id="btnToggleSafety" class="btn mini ghost" type="button">展开</button>
+      </div>
+    </div>
+    <div id="safetyBody" class="hidden safety">
+      <p class="safe-note">
+        每次提交 / 修改 / 删除都会自动存一份快照到 <code>backups\</code> 文件夹；
+        删除的记录不会消失，只是挪进 <code>已删除</code> 工作表。
+      </p>
+
+      <h3 class="safe-h">🗑 回收站（被删除的记录）</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr>
+            <th style="width:150px">删除时间</th><th>公司</th><th>岗位</th>
+            <th style="width:110px">状态</th><th style="width:100px">投递日期</th>
+            <th style="width:90px">操作</th>
+          </tr></thead>
+          <tbody id="trashBody"></tbody>
+        </table>
+      </div>
+      <p class="empty hidden" id="trashEmpty">回收站是空的 👍</p>
+
+      <h3 class="safe-h">🕘 历史版本（整表快照，可整体回滚）</h3>
+      <div id="backupList" class="backup-list"></div>
+      <p class="empty hidden" id="backupEmpty">还没有快照</p>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span id="filePath"></span>
+    <span class="sep">·</span>
+    <span>写入失败多半是 Excel 正开着这个文件，关掉再提交即可</span>
+  </footer>
+</main>
+
+<datalist id="dl_公司"></datalist>
+<datalist id="dl_岗位"></datalist>
+<div id="toast" class="toast"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+# 个人数据：不要上传
+投递记录.xlsx
+投递记录*.xlsx
+backups/
+已删除*.xlsx
+*.log
+config.local.*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 截图与临时产物
+*.tmp
+scratch/
